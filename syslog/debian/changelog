@@ -1,0 +1,41 @@
+fail2ban (0.5.2-3) unstable; urgency=low
+
+  * Fixed errata in /etc/default/fail2ban. (Closes: #323451)
+
+ -- Yaroslav Halchenko <debian@onerussian.com>  Tue, 16 Aug 2005 11:23:28 -1000
+
+fail2ban (0.5.2-2) unstable; urgency=low
+
+  * Updated description to reflect flexibility in application of fail2ban
+  * Included logrotate (Thanks to Baruch Even)
+
+ -- Yaroslav Halchenko <debian@onerussian.com>  Sat, 13 Aug 2005 04:51:57 -0400
+
+fail2ban (0.5.2-1) unstable; urgency=low
+
+  * New upstream release
+  * No log4py any more
+  * removed -i eth0 from config
+
+ -- Yaroslav Halchenko <debian@onerussian.com>  Sat,  6 Aug 2005 09:21:07 -1000
+
+fail2ban (0.5.1-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Yaroslav Halchenko <debian@onerussian.com>  Sat, 23 Jul 2005 08:50:00 -1000
+
+fail2ban (0.5.0-1) unstable; urgency=low
+
+  * New upstream release
+  * Libraries placed under /usr/share/fail2ban instead of /usr/lib/fail2ban
+  * Corrections to the description of the package
+
+ -- Yaroslav Halchenko <debian@onerussian.com>  Tue, 12 Jul 2005 23:33:20 -1000
+
+fail2ban (0.4.1-1) unstable; urgency=low
+
+  * First upstream release of a Debian package
+
+ -- Yaroslav Halchenko <debian@onerussian.com>  Mon, 04 Jul 2005 11:47:23 +0300
+

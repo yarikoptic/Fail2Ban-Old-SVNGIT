@@ -1,0 +1,16 @@
+fail2ban for Debian
+-------------------
+
+This package is nearly 100% identical to the upstream version. It was
+merely packaged to be installed on a Debian system and due to tight
+collaboration with upstream author most of the Debian modifications
+penetrate into the next upstream.
+
+Currently the main difference with upstream: python libraries are
+placed under /usr/share/fail2ban insteadh of /usr/lib/fail2ban to
+comply with policy regarding architecture independent resources.
+
+See the file TODO.Debian for more details, as well as the Debian Bug
+Tracking system.
+
+ -- Yaroslav O. Halchenko <debian@onerussian.com>, Sat Jul 23 09:09:51 2005
