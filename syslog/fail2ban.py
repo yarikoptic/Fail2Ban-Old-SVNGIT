@@ -175,6 +175,8 @@ def main():
 	# Options
 	optionValues = (["bool", "background", False],
 					["str", "logtargets", "/var/log/fail2ban.log"],
+					["str", "syslog-target", "/dev/log"],
+					["int", "syslog-facility", 1],
 					["bool", "debug", False],
 					["str", "pidlock", "/var/run/fail2ban.pid"],
 					["int", "maxretry", 3],
@@ -241,7 +243,32 @@ def main():
 		if target == "STDERR":
 			hdlr = logging.StreamHandler(sys.stderr)
 		elif target == "SYSLOG":
-			hdlr = logging.handlers.SysLogHandler()
+
+			# target can be either a socket (file, so it starts with /)
+			# or hostname
+			# or hostname:port
+			syslogtargets=re.findall("(/[\w/]*)|([^/ ][^: ]*)(:(\d+)){,1}",conf["syslog-target"])
+			syslogtargets=syslogtargets[0] # we are waiting for a single match
+
+			if conf["syslog-facility"]<0:
+				facility=handlers.SysLogHandler.LOG_USER
+			else:
+				facility=conf["syslog-facility"]
+
+			if len(syslogtargets)==0: # everything default
+				hdlr = logging.handlers.SysLogHandler()
+
+			elif not ( syslogtargets[0] == "" ): # got socket
+				hdlr = logging.handlers.SysLogHandler(syslogtargets[0], facility)
+
+			else:		# got hostname and may be a port
+				if syslogtargets[3] == "": # no port specified
+					port = 514
+				else:
+					port = int(syslogtargets[3])
+					
+				hdlr = logging.handlers.SysLogHandler((syslogtargets[1],port), facility)
+				
 		else:
 			# Target should be a file
 			try:
