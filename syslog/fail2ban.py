@@ -249,10 +249,11 @@ def main():
 			# or hostname
 			# or hostname:port
 			syslogtargets = re.findall("(/[\w/]*)|([^/ ][^: ]*)(:(\d+)){,1}",
-						   conf["syslog-target"])
+									   conf["syslog-target"])
 			# we are waiting for a single match
 			syslogtargets = syslogtargets[0]
 
+			# assign facility if it was defined
 			if conf["syslog-facility"] < 0:
 				facility = handlers.SysLogHandler.LOG_USER
 			else:
@@ -260,16 +261,15 @@ def main():
 
 			if len(syslogtargets) == 0: # everything default
 				hdlr = logging.handlers.SysLogHandler()
-
 			else:
 				if not ( syslogtargets[0] == "" ): # got socket
-					syslogtarget=syslogtargets[0]
+					syslogtarget = syslogtargets[0]
 				else:		# got hostname and may be a port
 					if syslogtargets[3] == "": # no port specified
 						port = 514
 					else:
 						port = int(syslogtargets[3])
-					syslogtarget=(syslogtargets[1], port)
+					syslogtarget = (syslogtargets[1], port)
 				hdlr = logging.handlers.SysLogHandler(syslogtarget, facility)
 				
 		else:
