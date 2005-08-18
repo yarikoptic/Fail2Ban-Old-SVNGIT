@@ -244,30 +244,33 @@ def main():
 			hdlr = logging.StreamHandler(sys.stderr)
 		elif target == "SYSLOG":
 
-			# target can be either a socket (file, so it starts with /)
+			# SYSLOG target can be either
+			#    a socket (file, so it starts with /)
 			# or hostname
 			# or hostname:port
-			syslogtargets=re.findall("(/[\w/]*)|([^/ ][^: ]*)(:(\d+)){,1}",conf["syslog-target"])
-			syslogtargets=syslogtargets[0] # we are waiting for a single match
+			syslogtargets = re.findall("(/[\w/]*)|([^/ ][^: ]*)(:(\d+)){,1}",
+						   conf["syslog-target"])
+			# we are waiting for a single match
+			syslogtargets = syslogtargets[0]
 
-			if conf["syslog-facility"]<0:
-				facility=handlers.SysLogHandler.LOG_USER
+			if conf["syslog-facility"] < 0:
+				facility = handlers.SysLogHandler.LOG_USER
 			else:
-				facility=conf["syslog-facility"]
+				facility = conf["syslog-facility"]
 
-			if len(syslogtargets)==0: # everything default
+			if len(syslogtargets) == 0: # everything default
 				hdlr = logging.handlers.SysLogHandler()
 
-			elif not ( syslogtargets[0] == "" ): # got socket
-				hdlr = logging.handlers.SysLogHandler(syslogtargets[0], facility)
-
-			else:		# got hostname and may be a port
-				if syslogtargets[3] == "": # no port specified
-					port = 514
-				else:
-					port = int(syslogtargets[3])
-					
-				hdlr = logging.handlers.SysLogHandler((syslogtargets[1],port), facility)
+			else:
+				if not ( syslogtargets[0] == "" ): # got socket
+					syslogtarget=syslogtargets[0]
+				else:		# got hostname and may be a port
+					if syslogtargets[3] == "": # no port specified
+						port = 514
+					else:
+						port = int(syslogtargets[3])
+					syslogtarget=(syslogtargets[1], port)
+				hdlr = logging.handlers.SysLogHandler(syslogtarget, facility)
 				
 		else:
 			# Target should be a file
