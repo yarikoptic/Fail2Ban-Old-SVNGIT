@@ -7,7 +7,7 @@
 @DPATCH@
 diff -urNad full_line_failregex~/client/configreader.py full_line_failregex/client/configreader.py
 --- full_line_failregex~/client/configreader.py	2007-08-15 22:57:28.000000000 -0400
-+++ full_line_failregex/client/configreader.py	2007-08-16 00:26:20.000000000 -0400
++++ full_line_failregex/client/configreader.py	2007-08-16 01:25:30.000000000 -0400
 @@ -51,10 +51,16 @@
  	def read(self, filename):
  		basename = ConfigReader.BASE_DIRECTORY + filename
@@ -26,3 +26,78 @@ diff -urNad full_line_failregex~/client/configreader.py full_line_failregex/clie
  			return True
  		else:
  			logSys.error(bConf + " and " + bLocal + " do not exist")
+diff -urNad full_line_failregex~/config/common.conf full_line_failregex/config/common.conf
+--- full_line_failregex~/config/common.conf	1969-12-31 19:00:00.000000000 -0500
++++ full_line_failregex/config/common.conf	2007-08-16 01:25:41.000000000 -0400
+@@ -0,0 +1,35 @@
++# Generic configuration items (to be used as interpolations) in other
++# filters  or actions configurations
++#
++# Author: Yaroslav Halchenko
++#
++# $Revision:  $
++#
++
++[DEFAULT]
++
++# Daemon definition is to be specialized (if needed) in .conf file
++_daemon = \S*
++
++#
++# Shortcuts for easier comprehension of the failregex
++#
++# PID.                 
++# EXAMPLES: [123]
++__pid_re = (?:\[\d+\])
++
++# Daemon name (with optional source_file:line or whatever)
++# EXAMPLES: pam_rhosts_auth, [sshd], pop(pam_unix)
++__daemon_re = [[(]?%(_daemon)s(?:\(\S+\))?[])]?:?
++
++# Combinations of daemon name and PID
++# EXAMPLES: sshd[31607], pop(pam_unix)[4920]
++__daemon_combs_re = (?:%(__pid_re)s?:\s+%(__daemon_re)s|%(__daemon_re)s%(__pid_re)s?:)
++
++#
++# Common line prefixes (beginnings) which could be used in filters
++#
++#       [hostname] [vserver tag] daemon_id spaces
++# this can be optional (for instance if we match named native log files)
++__prefix_line = \s*(?:\S+ )?(?:@vserver_\S+ )?%(__daemon_combs_re)s)?\s*
++
+diff -urNad full_line_failregex~/config/filter.d/sshd.conf full_line_failregex/config/filter.d/sshd.conf
+--- full_line_failregex~/config/filter.d/sshd.conf	2007-08-15 22:57:29.000000000 -0400
++++ full_line_failregex/config/filter.d/sshd.conf	2007-08-16 01:26:17.000000000 -0400
+@@ -2,11 +2,13 @@
+ #
+ # Author: Cyril Jaquier
+ #
+-# $Revision: 613 $
++# $Revision: 551 $
+ #
+ 
+ [Definition]
+ 
++_daemon = sshd
++
+ # Option:  failregex
+ # Notes.:  regex to match the password failures messages in the logfile. The
+ #          host must be matched by a group named "host". The tag "<HOST>" can
+@@ -14,12 +16,11 @@
+ #          (?:::f{4,6}:)?(?P<host>\S+)
+ # Values:  TEXT
+ #
+-failregex = (?:error: PAM: )?Authentication failure for .* from <HOST>\s*$
+-            Failed [-/\w]+ for .* from <HOST>(?: port \d*)?(?: ssh\d*)?\s*$
+-            ROOT LOGIN REFUSED.* FROM <HOST>\s*$
+-            [iI](?:llegal|nvalid) user .* from <HOST>\s*$
+-            User .+ from <HOST> not allowed because not listed in AllowUsers\s*$
+-            User .+ from <HOST> not allowed because none of user's groups are listed in AllowGroups\s*$
++failregex = ^%(__prefix_line)s(?:error: PAM: )?Authentication failure for .* from <HOST>\s*$
++            ^%(__prefix_line)sFailed [-/\w]+ for .* from <HOST>(?: port \d*)?(?: ssh\d*)?$
++            ^%(__prefix_line)sROOT LOGIN REFUSED.* FROM <HOST>\s*$
++            ^%(__prefix_line)s[iI](?:llegal|nvalid) user .* from <HOST>\s*$
++            ^%(__prefix_line)sUser \S+ from <HOST> not allowed because not listed in AllowUsers$
+ 
+ # Option:  ignoreregex
+ # Notes.:  regex to ignore. If this regex matches, the line is ignored.
