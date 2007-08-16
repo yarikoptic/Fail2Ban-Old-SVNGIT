@@ -1,0 +1,25 @@
+
+* for some reason only standard time format is anchored at the beginning of the line
+
+ TODO - decide either  we work with dates in the middle of the line and what then to do.
+
+ Anchoring of the datestamp to the beginning or specification of exact date
+ location is necessary to prevent injection of malicios datestamp into the
+ middle of the line: injecting of datestamp in format which is prior in the
+ list of templates would ruin automatic detection of the date, and might ruin
+ proper functioning or allow injection of the whole line with victim IP.
+
+ for now assumed that we work only at the beginning and no spaces preceed them.
+  splitting string into 2 parts -- date part and the rest. datepart goes
+ to getUnixTime and the rest to failregex matching
+
+* why not to strip all the log lines from both sides??
+
+* matchDate is called twice (with a loop obviousely through list of templates):
+ first to see if there is a datestamp
+ 2nd to really get the time..
+
+ why not simply return not only match but the template which matches? ie remove
+            if not self.dateDetector.matchTime(line):
+                        # There is no valid time in this line
+                        continue
