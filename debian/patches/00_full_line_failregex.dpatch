@@ -5,9 +5,169 @@
 ## DP: No description.
 
 @DPATCH@
+diff -urNad full_line_failregex~/client/configparserinc.py full_line_failregex/client/configparserinc.py
+--- full_line_failregex~/client/configparserinc.py	1969-12-31 19:00:00.000000000 -0500
++++ full_line_failregex/client/configparserinc.py	2007-08-20 18:22:17.000000000 -0400
+@@ -0,0 +1,111 @@
++# emacs: -*- mode: python; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: t -*-
++# ex: set ts=4 sw=4: unset expandtab:
++#------------------------- =+- Python script -+= -------------------------
++"""
++  Yaroslav Halchenko                                      CS@UNM, CS@NJIT
++  web:     http://www.onerussian.com                      & PSYCH@RUTGERS
++  e-mail:  yoh@onerussian.com                              ICQ#: 60653192
++
++ DESCRIPTION (NOTES):
++
++ COPYRIGHT: Yaroslav Halchenko 2007
++
++ LICENSE:
++
++  This program is free software; you can redistribute it and/or modify
++  it under the terms of the GNU General Public License as published by
++  the Free Software Foundation; either version 2 of the License, or
++  (at your option) any later version.
++
++  This program is distributed in the hope that it will be useful,
++  but WITHOUT ANY WARRANTY; without even the implied warranty of
++  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++  GNU General Public License for more details.
++
++  You should have received a copy of the GNU General Public License
++  along with this program; if not, write to the
++  Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
++  MA 02110-1301, USA.
++
++ On Debian system see /usr/share/common-licenses/GPL for the full license.
++"""
++#-----------------\____________________________________/------------------
++
++__author__ = 'Yaroslav Halhenko'
++__revision__ = '$Revision: $'
++__date__ = '$Date:  $'
++__copyright__ = 'Copyright (c) 2007 Yaroslav Halchenko'
++__license__ = 'GPL'
++
++from ConfigParser import SafeConfigParser
++from ConfigParser import NoOptionError, NoSectionError
++
++class SafeConfigParserWithIncludes(SafeConfigParser):
++	"""
++	Class adds functionality to SafeConfigParser to handle included
++	other configuration files (or may be urls, whatever in the future)
++
++	File should have section [includes] and only 2 options implemented
++	are 'files_before' and 'files_after' where files are listed 1 per
++	line.
++
++	Example:
++
++[INCLUDES]
++files_before = 1.conf
++			   3.conf
++
++files_after = 1.conf
++
++	It is a simple implementation, so just basic care is taken about
++	recursion. Includes preserve right order, ie new files are
++	inserted to the list of read configs before original, and their
++	includes correspondingly so the list should follow the leaves of
++	the tree.
++
++	I wasn't sure what would be the right way to implement generic (aka c++
++    template) so we could base at any *configparser class... so I will
++    leave it for the future
++
++	"""
++
++	@staticmethod
++	def getIncludedFiles(filename, sectionName='INCLUDES',
++						 defaults={}, seen=[]):
++		"""
++		Given 1 config filename returns list of included files
++		(recursively) with the original one as well
++		Simple loops are taken care about
++		"""
++		filenames = []
++		#print "Opening file " + filename
++		d = defaults.copy()		# so that we do not poison our defaults
++		parser = SafeConfigParser(defaults = d)
++		parser.read(filename)
++		newFiles = [ ('files_before', []), ('files_after', []) ]
++		if sectionName in parser.sections():
++			for option_name, option_list in newFiles:
++				if option_name in parser.options(sectionName):
++					newFileNames = parser.get(sectionName, option_name)
++					for newFileName in newFileNames.split('\n'):
++						if newFileName in seen: continue
++						option_list += SafeConfigParserWithIncludes.\
++									   getIncludedFiles(newFileName,
++														defaults=defaults,
++														seen=seen + [filename])
++		# combine lists
++		filenames = newFiles[0][1] + [filename] + newFiles[1][1]
++		#print "Includes list for " + filename + " is " + `filenames`
++		return filenames
++
++
++	def read(self, filenames):
++		fileNamesFull = []
++		if not isinstance(filenames, list):
++			filenames = [ filenames ]
++		for filename in filenames:
++			fileNamesFull += SafeConfigParserWithIncludes.\
++							 getIncludedFiles(filename, defaults=self._defaults)
++		#print "Opening config files " + `fileNamesFull`
++		return SafeConfigParser.read(self, fileNamesFull)
++
+diff -urNad full_line_failregex~/client/configreader.py full_line_failregex/client/configreader.py
+--- full_line_failregex~/client/configreader.py	2007-08-20 14:52:38.000000000 -0400
++++ full_line_failregex/client/configreader.py	2007-08-20 18:22:17.000000000 -0400
+@@ -15,7 +15,7 @@
+ # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ 
+ # Author: Cyril Jaquier
+-# 
++# Modified by: Yaroslav Halchenko (SafeConfigParserWithIncludes)
+ # $Revision: 458 $
+ 
+ __author__ = "Cyril Jaquier"
+@@ -25,18 +25,20 @@
+ __license__ = "GPL"
+ 
+ import logging, os
+-from ConfigParser import SafeConfigParser
++from configparserinc import SafeConfigParserWithIncludes
+ from ConfigParser import NoOptionError, NoSectionError
+ 
+ # Gets the instance of the logger.
+ logSys = logging.getLogger("fail2ban.client.config")
+ 
+-class ConfigReader(SafeConfigParser):
++class ConfigReader(SafeConfigParserWithIncludes):
+ 	
+ 	BASE_DIRECTORY = "/etc/fail2ban/"
+ 	
+ 	def __init__(self):
+-		SafeConfigParser.__init__(self)
++		SafeConfigParserWithIncludes.__init__(self,
++											  {'configpath' : \
++											   ConfigReader.BASE_DIRECTORY} )
+ 		self.__opts = None
+ 	
+ 	@staticmethod
+@@ -54,7 +56,7 @@
+ 		bConf = basename + ".conf"
+ 		bLocal = basename + ".local"
+ 		if os.path.exists(bConf) or os.path.exists(bLocal):
+-			SafeConfigParser.read(self, [bConf, bLocal])
++			SafeConfigParserWithIncludes.read(self, [bConf, bLocal])
+ 			return True
+ 		else:
+ 			logSys.error(bConf + " and " + bLocal + " do not exist")
 diff -urNad full_line_failregex~/config/filter.d/common.conf full_line_failregex/config/filter.d/common.conf
 --- full_line_failregex~/config/filter.d/common.conf	1969-12-31 19:00:00.000000000 -0500
-+++ full_line_failregex/config/filter.d/common.conf	2007-08-20 14:54:24.000000000 -0400
++++ full_line_failregex/config/filter.d/common.conf	2007-08-20 18:21:50.000000000 -0400
 @@ -0,0 +1,41 @@
 +# Generic configuration items (to be used as interpolations) in other
 +# filters  or actions configurations
@@ -50,9 +210,93 @@ diff -urNad full_line_failregex~/config/filter.d/common.conf full_line_failregex
 +# this can be optional (for instance if we match named native log files)
 +__prefix_line = \s*(?:\S+ )?(?:@vserver_\S+ )?%(__daemon_combs_re)s?\s*
 +
+diff -urNad full_line_failregex~/config/filter.d/sshd.conf full_line_failregex/config/filter.d/sshd.conf
+--- full_line_failregex~/config/filter.d/sshd.conf	2007-08-20 14:52:38.000000000 -0400
++++ full_line_failregex/config/filter.d/sshd.conf	2007-08-20 18:22:17.000000000 -0400
+@@ -2,11 +2,20 @@
+ #
+ # Author: Cyril Jaquier
+ #
+-# $Revision: 613 $
++# $Revision: 551 $
+ #
+ 
++[INCLUDES]
++
++# Read common prefixes. If any customizations available -- read them from
++# common.local
++files_before = %(configpath)s/filter.d/common.conf
++
++
+ [Definition]
+ 
++_daemon = sshd
++
+ # Option:  failregex
+ # Notes.:  regex to match the password failures messages in the logfile. The
+ #          host must be matched by a group named "host". The tag "<HOST>" can
+@@ -14,12 +23,11 @@
+ #          (?:::f{4,6}:)?(?P<host>\S+)
+ # Values:  TEXT
+ #
+-failregex = (?:error: PAM: )?Authentication failure for .* from <HOST>\s*$
+-            Failed [-/\w]+ for .* from <HOST>(?: port \d*)?(?: ssh\d*)?\s*$
+-            ROOT LOGIN REFUSED.* FROM <HOST>\s*$
+-            [iI](?:llegal|nvalid) user .* from <HOST>\s*$
+-            User .+ from <HOST> not allowed because not listed in AllowUsers\s*$
+-            User .+ from <HOST> not allowed because none of user's groups are listed in AllowGroups\s*$
++failregex = ^%(__prefix_line)s(?:error: PAM: )?Authentication failure for .* from <HOST>\s*$
++            ^%(__prefix_line)sFailed [-/\w]+ for .* from <HOST>(?: port \d*)?(?: ssh\d*)?$
++            ^%(__prefix_line)sROOT LOGIN REFUSED.* FROM <HOST>\s*$
++            ^%(__prefix_line)s[iI](?:llegal|nvalid) user .* from <HOST>\s*$
++            ^%(__prefix_line)sUser \S+ from <HOST> not allowed because not listed in AllowUsers$
+ 
+ # Option:  ignoreregex
+ # Notes.:  regex to ignore. If this regex matches, the line is ignored.
+diff -urNad full_line_failregex~/fail2ban-regex full_line_failregex/fail2ban-regex
+--- full_line_failregex~/fail2ban-regex	2007-08-20 14:52:38.000000000 -0400
++++ full_line_failregex/fail2ban-regex	2007-08-20 18:22:17.000000000 -0400
+@@ -31,7 +31,7 @@
+ # fix for bug #343821
+ sys.path.insert(1, "/usr/share/fail2ban")
+ 
+-from ConfigParser import SafeConfigParser
++from client.configparserinc import SafeConfigParserWithIncludes
+ from ConfigParser import NoOptionError, NoSectionError, MissingSectionHeaderError
+ from common.version import version
+ from server.filter import Filter
+@@ -65,7 +65,9 @@
+ class Fail2banRegex:
+ 	
+ 	test = None
+-	
++
++	CONFIG_DEFAULTS = {'configpath' : "/etc/fail2ban/"}
++
+ 	def __init__(self):
+ 		self.__filter = Filter(None)
+ 		self.__ignoreregex = list()
+@@ -135,7 +137,7 @@
+ 
+ 	def readIgnoreRegex(self, value):
+ 		if os.path.isfile(value):
+-			reader = SafeConfigParser()
++			reader = SafeConfigParserWithIncludes(defaults=self.CONFIG_DEFAULTS)
+ 			try:
+ 				reader.read(value)
+ 				print "Use ignoreregex file : " + value
+@@ -164,7 +166,7 @@
+ 
+ 	def readRegex(self, value):
+ 		if os.path.isfile(value):
+-			reader = SafeConfigParser()
++			reader = SafeConfigParserWithIncludes(defaults=self.CONFIG_DEFAULTS)
+ 			try:
+ 				reader.read(value)
+ 				print "Use regex file : " + value
 diff -urNad full_line_failregex~/server/filter.py full_line_failregex/server/filter.py
 --- full_line_failregex~/server/filter.py	2007-08-20 14:52:38.000000000 -0400
-+++ full_line_failregex/server/filter.py	2007-08-20 14:54:04.000000000 -0400
++++ full_line_failregex/server/filter.py	2007-08-20 18:21:50.000000000 -0400
 @@ -383,7 +383,7 @@
  			logSys.error("Unable to get failures in " + filename)
  			return False
