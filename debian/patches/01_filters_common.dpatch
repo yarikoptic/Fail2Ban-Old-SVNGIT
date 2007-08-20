@@ -7,7 +7,7 @@
 @DPATCH@
 diff -urNad full_line_failregex~/client/configparserinc.py full_line_failregex/client/configparserinc.py
 --- full_line_failregex~/client/configparserinc.py	1969-12-31 19:00:00.000000000 -0500
-+++ full_line_failregex/client/configparserinc.py	2007-08-19 22:57:39.000000000 -0400
++++ full_line_failregex/client/configparserinc.py	2007-08-19 23:21:36.000000000 -0400
 @@ -0,0 +1,97 @@
 +# emacs: -*- mode: python; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: t -*-
 +# ex: set ts=4 sw=4: unset expandtab:
@@ -107,8 +107,8 @@ diff -urNad full_line_failregex~/client/configparserinc.py full_line_failregex/c
 +		return SafeConfigParser.read(self, fileNamesFull)
 +
 diff -urNad full_line_failregex~/client/configreader.py full_line_failregex/client/configreader.py
---- full_line_failregex~/client/configreader.py	2007-08-15 22:57:28.000000000 -0400
-+++ full_line_failregex/client/configreader.py	2007-08-19 22:58:16.000000000 -0400
+--- full_line_failregex~/client/configreader.py	2007-08-19 23:20:49.000000000 -0400
++++ full_line_failregex/client/configreader.py	2007-08-19 23:21:36.000000000 -0400
 @@ -15,7 +15,7 @@
  # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  
@@ -151,8 +151,8 @@ diff -urNad full_line_failregex~/client/configreader.py full_line_failregex/clie
  			logSys.error(bConf + " and " + bLocal + " do not exist")
 diff -urNad full_line_failregex~/config/filter.d/common.conf full_line_failregex/config/filter.d/common.conf
 --- full_line_failregex~/config/filter.d/common.conf	1969-12-31 19:00:00.000000000 -0500
-+++ full_line_failregex/config/filter.d/common.conf	2007-08-19 23:01:17.000000000 -0400
-@@ -0,0 +1,41 @@
++++ full_line_failregex/config/filter.d/common.conf	2007-08-19 23:21:56.000000000 -0400
+@@ -0,0 +1,35 @@
 +# Generic configuration items (to be used as interpolations) in other
 +# filters  or actions configurations
 +#
@@ -160,12 +160,6 @@ diff -urNad full_line_failregex~/config/filter.d/common.conf full_line_failregex
 +#
 +# $Revision:  $
 +#
-+
-+[INCLUDES]
-+
-+# If any customizations available -- read them from common.local
-+files = /etc/fail2ban/filter.d/common.local
-+
 +
 +[DEFAULT]
 +
@@ -196,8 +190,8 @@ diff -urNad full_line_failregex~/config/filter.d/common.conf full_line_failregex
 +
 diff -urNad full_line_failregex~/config/filter.d/sshd.conf full_line_failregex/config/filter.d/sshd.conf
 --- full_line_failregex~/config/filter.d/sshd.conf	2007-08-15 22:57:29.000000000 -0400
-+++ full_line_failregex/config/filter.d/sshd.conf	2007-08-19 23:01:39.000000000 -0400
-@@ -2,11 +2,18 @@
++++ full_line_failregex/config/filter.d/sshd.conf	2007-08-19 23:23:05.000000000 -0400
+@@ -2,11 +2,21 @@
  #
  # Author: Cyril Jaquier
  #
@@ -207,8 +201,11 @@ diff -urNad full_line_failregex~/config/filter.d/sshd.conf full_line_failregex/c
  
 +[INCLUDES]
 +
-+# If any customizations available -- read them from common.local
-+files = /etc/fail2ban/filter.d/common.conf
++# Read common prefixes. If any customizations available -- read them from
++# common.local
++files = /etc/fail2ban/filter.d/common.conf 
++        /etc/fail2ban/filter.d/common.local
++
 +
  [Definition]
  
@@ -217,7 +214,7 @@ diff -urNad full_line_failregex~/config/filter.d/sshd.conf full_line_failregex/c
  # Option:  failregex
  # Notes.:  regex to match the password failures messages in the logfile. The
  #          host must be matched by a group named "host". The tag "<HOST>" can
-@@ -14,12 +21,11 @@
+@@ -14,12 +24,11 @@
  #          (?:::f{4,6}:)?(?P<host>\S+)
  # Values:  TEXT
  #
@@ -235,3 +232,33 @@ diff -urNad full_line_failregex~/config/filter.d/sshd.conf full_line_failregex/c
  
  # Option:  ignoreregex
  # Notes.:  regex to ignore. If this regex matches, the line is ignored.
+diff -urNad full_line_failregex~/fail2ban-regex full_line_failregex/fail2ban-regex
+--- full_line_failregex~/fail2ban-regex	2007-08-19 23:20:49.000000000 -0400
++++ full_line_failregex/fail2ban-regex	2007-08-19 23:21:36.000000000 -0400
+@@ -31,7 +31,7 @@
+ # fix for bug #343821
+ sys.path.insert(1, "/usr/share/fail2ban")
+ 
+-from ConfigParser import SafeConfigParser
++from client.configparserinc import SafeConfigParserWithIncludes
+ from ConfigParser import NoOptionError, NoSectionError, MissingSectionHeaderError
+ from common.version import version
+ from server.filter import Filter
+@@ -135,7 +135,7 @@
+ 
+ 	def readIgnoreRegex(self, value):
+ 		if os.path.isfile(value):
+-			reader = SafeConfigParser()
++			reader = SafeConfigParserWithIncludes()
+ 			try:
+ 				reader.read(value)
+ 				print "Use ignoreregex file : " + value
+@@ -164,7 +164,7 @@
+ 
+ 	def readRegex(self, value):
+ 		if os.path.isfile(value):
+-			reader = SafeConfigParser()
++			reader = SafeConfigParserWithIncludes()
+ 			try:
+ 				reader.read(value)
+ 				print "Use regex file : " + value
