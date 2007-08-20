@@ -7,7 +7,7 @@
 @DPATCH@
 diff -urNad full_line_failregex~/client/configparserinc.py full_line_failregex/client/configparserinc.py
 --- full_line_failregex~/client/configparserinc.py	1969-12-31 19:00:00.000000000 -0500
-+++ full_line_failregex/client/configparserinc.py	2007-08-20 18:22:17.000000000 -0400
++++ full_line_failregex/client/configparserinc.py	2007-08-20 19:28:02.000000000 -0400
 @@ -0,0 +1,111 @@
 +# emacs: -*- mode: python; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: t -*-
 +# ex: set ts=4 sw=4: unset expandtab:
@@ -122,7 +122,7 @@ diff -urNad full_line_failregex~/client/configparserinc.py full_line_failregex/c
 +
 diff -urNad full_line_failregex~/client/configreader.py full_line_failregex/client/configreader.py
 --- full_line_failregex~/client/configreader.py	2007-08-20 14:52:38.000000000 -0400
-+++ full_line_failregex/client/configreader.py	2007-08-20 18:22:17.000000000 -0400
++++ full_line_failregex/client/configreader.py	2007-08-20 19:28:02.000000000 -0400
 @@ -15,7 +15,7 @@
  # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  
@@ -167,7 +167,7 @@ diff -urNad full_line_failregex~/client/configreader.py full_line_failregex/clie
  			logSys.error(bConf + " and " + bLocal + " do not exist")
 diff -urNad full_line_failregex~/config/filter.d/common.conf full_line_failregex/config/filter.d/common.conf
 --- full_line_failregex~/config/filter.d/common.conf	1969-12-31 19:00:00.000000000 -0500
-+++ full_line_failregex/config/filter.d/common.conf	2007-08-20 18:21:50.000000000 -0400
++++ full_line_failregex/config/filter.d/common.conf	2007-08-20 19:28:02.000000000 -0400
 @@ -0,0 +1,41 @@
 +# Generic configuration items (to be used as interpolations) in other
 +# filters  or actions configurations
@@ -212,7 +212,7 @@ diff -urNad full_line_failregex~/config/filter.d/common.conf full_line_failregex
 +
 diff -urNad full_line_failregex~/config/filter.d/sshd.conf full_line_failregex/config/filter.d/sshd.conf
 --- full_line_failregex~/config/filter.d/sshd.conf	2007-08-20 14:52:38.000000000 -0400
-+++ full_line_failregex/config/filter.d/sshd.conf	2007-08-20 18:22:17.000000000 -0400
++++ full_line_failregex/config/filter.d/sshd.conf	2007-08-20 19:28:02.000000000 -0400
 @@ -2,11 +2,20 @@
  #
  # Author: Cyril Jaquier
@@ -255,7 +255,7 @@ diff -urNad full_line_failregex~/config/filter.d/sshd.conf full_line_failregex/c
  # Notes.:  regex to ignore. If this regex matches, the line is ignored.
 diff -urNad full_line_failregex~/fail2ban-regex full_line_failregex/fail2ban-regex
 --- full_line_failregex~/fail2ban-regex	2007-08-20 14:52:38.000000000 -0400
-+++ full_line_failregex/fail2ban-regex	2007-08-20 18:22:17.000000000 -0400
++++ full_line_failregex/fail2ban-regex	2007-08-20 19:28:02.000000000 -0400
 @@ -31,7 +31,7 @@
  # fix for bug #343821
  sys.path.insert(1, "/usr/share/fail2ban")
@@ -296,7 +296,7 @@ diff -urNad full_line_failregex~/fail2ban-regex full_line_failregex/fail2ban-reg
  				print "Use regex file : " + value
 diff -urNad full_line_failregex~/server/filter.py full_line_failregex/server/filter.py
 --- full_line_failregex~/server/filter.py	2007-08-20 14:52:38.000000000 -0400
-+++ full_line_failregex/server/filter.py	2007-08-20 18:21:50.000000000 -0400
++++ full_line_failregex/server/filter.py	2007-08-20 19:28:28.000000000 -0400
 @@ -383,7 +383,7 @@
  			logSys.error("Unable to get failures in " + filename)
  			return False
@@ -312,7 +312,7 @@ diff -urNad full_line_failregex~/server/filter.py full_line_failregex/server/fil
  				pass
 -			if not self.dateDetector.matchTime(line):
 +			timeMatch = self.dateDetector.matchTime(line)
-+			if not matchTime:
++			if not timeMatch:
  				# There is no valid time in this line
  				continue
 -			lastLine = line
