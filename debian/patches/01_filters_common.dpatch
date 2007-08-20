@@ -7,8 +7,8 @@
 @DPATCH@
 diff -urNad full_line_failregex~/client/configparserinc.py full_line_failregex/client/configparserinc.py
 --- full_line_failregex~/client/configparserinc.py	1969-12-31 19:00:00.000000000 -0500
-+++ full_line_failregex/client/configparserinc.py	2007-08-20 11:49:24.000000000 -0400
-@@ -0,0 +1,108 @@
++++ full_line_failregex/client/configparserinc.py	2007-08-20 14:53:24.000000000 -0400
+@@ -0,0 +1,111 @@
 +# emacs: -*- mode: python; c-basic-offset: 4; tab-width: 4; indent-tabs-mode: t -*-
 +# ex: set ts=4 sw=4: unset expandtab:
 +#------------------------- =+- Python script -+= -------------------------
@@ -81,7 +81,8 @@ diff -urNad full_line_failregex~/client/configparserinc.py full_line_failregex/c
 +	"""
 +
 +	@staticmethod
-+	def getIncludedFiles(filename, sectionName='INCLUDES', seen=[]):
++	def getIncludedFiles(filename, sectionName='INCLUDES',
++						 defaults={}, seen=[]):
 +		"""
 +		Given 1 config filename returns list of included files
 +		(recursively) with the original one as well
@@ -89,7 +90,8 @@ diff -urNad full_line_failregex~/client/configparserinc.py full_line_failregex/c
 +		"""
 +		filenames = []
 +		#print "Opening file " + filename
-+		parser = SafeConfigParser()
++		d = defaults.copy()		# so that we do not poison our defaults
++		parser = SafeConfigParser(defaults = d)
 +		parser.read(filename)
 +		newFiles = [ ('files_before', []), ('files_after', []) ]
 +		if sectionName in parser.sections():
@@ -100,6 +102,7 @@ diff -urNad full_line_failregex~/client/configparserinc.py full_line_failregex/c
 +						if newFileName in seen: continue
 +						option_list += SafeConfigParserWithIncludes.\
 +									   getIncludedFiles(newFileName,
++														defaults=defaults,
 +														seen=seen + [filename])
 +		# combine lists
 +		filenames = newFiles[0][1] + [filename] + newFiles[1][1]
@@ -113,13 +116,13 @@ diff -urNad full_line_failregex~/client/configparserinc.py full_line_failregex/c
 +			filenames = [ filenames ]
 +		for filename in filenames:
 +			fileNamesFull += SafeConfigParserWithIncludes.\
-+							 getIncludedFiles(filename)
++							 getIncludedFiles(filename, defaults=self._defaults)
 +		#print "Opening config files " + `fileNamesFull`
 +		return SafeConfigParser.read(self, fileNamesFull)
 +
 diff -urNad full_line_failregex~/client/configreader.py full_line_failregex/client/configreader.py
---- full_line_failregex~/client/configreader.py	2007-08-19 23:20:49.000000000 -0400
-+++ full_line_failregex/client/configreader.py	2007-08-20 11:52:22.000000000 -0400
+--- full_line_failregex~/client/configreader.py	2007-08-20 14:52:38.000000000 -0400
++++ full_line_failregex/client/configreader.py	2007-08-20 14:52:42.000000000 -0400
 @@ -15,7 +15,7 @@
  # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  
@@ -164,7 +167,7 @@ diff -urNad full_line_failregex~/client/configreader.py full_line_failregex/clie
  			logSys.error(bConf + " and " + bLocal + " do not exist")
 diff -urNad full_line_failregex~/config/filter.d/common.conf full_line_failregex/config/filter.d/common.conf
 --- full_line_failregex~/config/filter.d/common.conf	1969-12-31 19:00:00.000000000 -0500
-+++ full_line_failregex/config/filter.d/common.conf	2007-08-20 11:52:47.000000000 -0400
++++ full_line_failregex/config/filter.d/common.conf	2007-08-20 14:52:42.000000000 -0400
 @@ -0,0 +1,41 @@
 +# Generic configuration items (to be used as interpolations) in other
 +# filters  or actions configurations
@@ -208,8 +211,8 @@ diff -urNad full_line_failregex~/config/filter.d/common.conf full_line_failregex
 +__prefix_line = \s*(?:\S+ )?(?:@vserver_\S+ )?%(__daemon_combs_re)s)?\s*
 +
 diff -urNad full_line_failregex~/config/filter.d/sshd.conf full_line_failregex/config/filter.d/sshd.conf
---- full_line_failregex~/config/filter.d/sshd.conf	2007-08-15 22:57:29.000000000 -0400
-+++ full_line_failregex/config/filter.d/sshd.conf	2007-08-20 11:53:15.000000000 -0400
+--- full_line_failregex~/config/filter.d/sshd.conf	2007-08-20 14:52:38.000000000 -0400
++++ full_line_failregex/config/filter.d/sshd.conf	2007-08-20 14:52:42.000000000 -0400
 @@ -2,11 +2,20 @@
  #
  # Author: Cyril Jaquier
@@ -251,8 +254,8 @@ diff -urNad full_line_failregex~/config/filter.d/sshd.conf full_line_failregex/c
  # Option:  ignoreregex
  # Notes.:  regex to ignore. If this regex matches, the line is ignored.
 diff -urNad full_line_failregex~/fail2ban-regex full_line_failregex/fail2ban-regex
---- full_line_failregex~/fail2ban-regex	2007-08-19 23:20:49.000000000 -0400
-+++ full_line_failregex/fail2ban-regex	2007-08-20 11:49:24.000000000 -0400
+--- full_line_failregex~/fail2ban-regex	2007-08-20 14:52:38.000000000 -0400
++++ full_line_failregex/fail2ban-regex	2007-08-20 14:53:34.000000000 -0400
 @@ -31,7 +31,7 @@
  # fix for bug #343821
  sys.path.insert(1, "/usr/share/fail2ban")
@@ -262,21 +265,32 @@ diff -urNad full_line_failregex~/fail2ban-regex full_line_failregex/fail2ban-reg
  from ConfigParser import NoOptionError, NoSectionError, MissingSectionHeaderError
  from common.version import version
  from server.filter import Filter
-@@ -135,7 +135,7 @@
+@@ -65,7 +65,9 @@
+ class Fail2banRegex:
+ 	
+ 	test = None
+-	
++
++	CONFIG_DEFAULTS = {'configpath' : "/etc/fail2ban/"}
++
+ 	def __init__(self):
+ 		self.__filter = Filter(None)
+ 		self.__ignoreregex = list()
+@@ -135,7 +137,7 @@
  
  	def readIgnoreRegex(self, value):
  		if os.path.isfile(value):
 -			reader = SafeConfigParser()
-+			reader = SafeConfigParserWithIncludes()
++			reader = SafeConfigParserWithIncludes(defaults=self.CONFIG_DEFAULTS)
  			try:
  				reader.read(value)
  				print "Use ignoreregex file : " + value
-@@ -164,7 +164,7 @@
+@@ -164,7 +166,7 @@
  
  	def readRegex(self, value):
  		if os.path.isfile(value):
 -			reader = SafeConfigParser()
-+			reader = SafeConfigParserWithIncludes()
++			reader = SafeConfigParserWithIncludes(defaults=self.CONFIG_DEFAULTS)
  			try:
  				reader.read(value)
  				print "Use regex file : " + value

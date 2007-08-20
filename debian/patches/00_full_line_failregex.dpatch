@@ -5,9 +5,54 @@
 ## DP: No description.
 
 @DPATCH@
+diff -urNad full_line_failregex~/config/filter.d/common.conf full_line_failregex/config/filter.d/common.conf
+--- full_line_failregex~/config/filter.d/common.conf	1969-12-31 19:00:00.000000000 -0500
++++ full_line_failregex/config/filter.d/common.conf	2007-08-20 14:54:24.000000000 -0400
+@@ -0,0 +1,41 @@
++# Generic configuration items (to be used as interpolations) in other
++# filters  or actions configurations
++#
++# Author: Yaroslav Halchenko
++#
++# $Revision:  $
++#
++
++[INCLUDES]
++
++# Load customizations if any available
++files_after = %(configpath)s/filter.d/common.local
++
++
++[DEFAULT]
++
++# Daemon definition is to be specialized (if needed) in .conf file
++_daemon = \S*
++
++#
++# Shortcuts for easier comprehension of the failregex
++#
++# PID.
++# EXAMPLES: [123]
++__pid_re = (?:\[\d+\])
++
++# Daemon name (with optional source_file:line or whatever)
++# EXAMPLES: pam_rhosts_auth, [sshd], pop(pam_unix)
++__daemon_re = [\[\(]?%(_daemon)s(?:\(\S+\))?[\]\)]?:?
++
++# Combinations of daemon name and PID
++# EXAMPLES: sshd[31607], pop(pam_unix)[4920]
++__daemon_combs_re = (?:%(__pid_re)s?:\s+%(__daemon_re)s|%(__daemon_re)s%(__pid_re)s?:)
++
++#
++# Common line prefixes (beginnings) which could be used in filters
++#
++#       [hostname] [vserver tag] daemon_id spaces
++# this can be optional (for instance if we match named native log files)
++__prefix_line = \s*(?:\S+ )?(?:@vserver_\S+ )?%(__daemon_combs_re)s?\s*
++
 diff -urNad full_line_failregex~/server/filter.py full_line_failregex/server/filter.py
---- full_line_failregex~/server/filter.py	2007-08-15 22:57:31.000000000 -0400
-+++ full_line_failregex/server/filter.py	2007-08-16 00:03:51.000000000 -0400
+--- full_line_failregex~/server/filter.py	2007-08-20 14:52:38.000000000 -0400
++++ full_line_failregex/server/filter.py	2007-08-20 14:54:04.000000000 -0400
 @@ -383,7 +383,7 @@
  			logSys.error("Unable to get failures in " + filename)
  			return False
